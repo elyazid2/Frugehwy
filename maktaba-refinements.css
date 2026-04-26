@@ -1,0 +1,505 @@
+/*
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║          MAKTABA – UI/UX REFINEMENTS PATCH  (v1.0)              ║
+ * ║  Paste this entire block at the END of your existing <style>     ║
+ * ║  tag in index.html. CSS cascade ensures these overrides apply.   ║
+ * ╚══════════════════════════════════════════════════════════════════╝
+ *
+ * ALSO SEE: maktaba-refinements.js  →  JS utilities (focus marker, etc.)
+ *           maktaba-html-patches.md →  HTML structure changes (RSVP controls)
+ */
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ① SAFE AREA / STATUS BAR COLLISION FIX
+   Introduces --safe-top and --topbar-h CSS variables so every
+   element positioned relative to the reader topbar can adapt to
+   notched / dynamic-island phones automatically.
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* The device's top inset (notch / Dynamic Island). Falls back to 0
+     on flat screens. env() is the modern standard; the constant()
+     fallback handles older iOS ≤ 11 devices. */
+  --safe-top: env(safe-area-inset-top, constant(safe-area-inset-top, 0px));
+
+  /* Computed full reader topbar height including the safe area */
+  --topbar-h: calc(52px + var(--safe-top));
+
+  /* Convenience for the 4px gap used below the topbar */
+  --topbar-h-gap: calc(var(--topbar-h) + 4px);
+}
+
+/* ── Library / Upload / Settings / Timer screen headers ── */
+.page-header {
+  /* Original: padding: 56px 24px 20px;
+     New: top padding equals safe-area + comfortable gap above title */
+  padding: calc(var(--safe-top) + 36px) 24px 20px;
+}
+
+/* ── Reader topbar: grows to clear notch, content stays below ── */
+#reader-topbar {
+  height: var(--topbar-h);
+  padding-top: var(--safe-top);
+  /* All other properties (bg, border, z-index…) come from original */
+}
+
+/* ── Floating buttons inside the reader that sit below the topbar ── */
+#reader-sound-btn {
+  top: var(--topbar-h-gap);
+}
+
+#timer-float {
+  top: var(--topbar-h-gap);
+}
+
+/* ── RSVP tap zone & manual reading area must clear the taller topbar ── */
+/* NOTE: #rsvp-tap-zone has an inline style="inset:52px 0 110px 0"
+         Add !important here, OR remove the inline attribute from the HTML. */
+#rsvp-tap-zone {
+  top: var(--topbar-h) !important;
+}
+
+#manual-display {
+  /* Original inset: 52px 0 120px 0  */
+  inset: var(--topbar-h) 0 120px 0;
+}
+
+/* ── Landscape tweak: smaller safe-area offset in landscape mode ── */
+@media (orientation: landscape) {
+  .page-header {
+    padding-top: calc(var(--safe-top) + 18px);
+  }
+  #reader-sound-btn {
+    top: calc(var(--topbar-h-gap) - 6px);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ② MANUAL MODE READABILITY — LINE HEIGHT
+   Increases inter-line spacing for comfortable long-session reading.
+   ══════════════════════════════════════════════════════════════════ */
+
+#manual-text {
+  line-height: 1.6;
+  /* Also loosen letter-spacing slightly for dense Arabic / serif text */
+  letter-spacing: 0.01em;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ③ SLIDER THUMB VERTICAL ALIGNMENT
+   On Webkit (iOS Safari, Chrome) the thumb is positioned relative to
+   the input's height. When the input height = 4px and the thumb is
+   20px, browsers place the thumb differently. The fix:
+     • Input height = transparent container matching thumb height
+     • Define track via ::-webkit-slider-runnable-track
+     • margin-top on thumb = (trackH - thumbH) / 2 = (4 - 20) / 2 = -8px
+   ══════════════════════════════════════════════════════════════════ */
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;          /* matches thumb height — input is now a transparent hit target */
+  background: transparent; /* background moved to runnable-track below */
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 2px 0;
+}
+
+/* ── Webkit (iOS Safari, Chrome, Edge) track ── */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+
+/* ── Webkit thumb: perfectly centered on the 4px track ── */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;   /* (4px track − 20px thumb) ÷ 2 */
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(200,169,110,0.15), 0 0 10px var(--accent-glow);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px rgba(200,169,110,0.2), 0 0 14px var(--accent-glow);
+}
+
+/* ── Firefox track ── */
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: var(--text-muted);
+  border-radius: 4px;
+  border: none;
+}
+
+/* ── Firefox thumb (no margin-top needed, Firefox centers automatically) ── */
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 0 0 2px rgba(200,169,110,0.15), 0 0 10px var(--accent-glow);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  transform: scale(1.25);
+}
+
+/* ── Fill track color on Webkit (progress indication) ── */
+/* Requires JS to update --range-progress on input events.
+   See maktaba-refinements.js for the helper. */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--range-progress, 0%),
+    var(--text-muted) var(--range-progress, 0%),
+    var(--text-muted) 100%
+  );
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ④ GLASSMORPHISM OVERLAYS
+   Replaces opaque dark-grey backgrounds on bottom sheets and popups
+   with a blurred, semi-transparent glass effect that feels premium.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Quick Settings bottom sheet ── */
+#reader-settings-panel {
+  background: rgba(14, 14, 14, 0.68);
+  backdrop-filter: blur(32px) saturate(180%) brightness(0.9);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  /* Remove old opaque override */
+  border-left: none;
+  border-right: none;
+}
+
+/* Subtle inner highlight on the handle to reinforce the glass edge */
+#reader-settings-panel .panel-handle {
+  background: rgba(255,255,255,0.18);
+}
+
+/* Panel title slightly brightened against the glassy bg */
+#reader-settings-panel .panel-title {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ── Ambient sound mini-panel ── */
+#reader-sound-panel {
+  background: rgba(14, 14, 14, 0.68);
+  backdrop-filter: blur(32px) saturate(180%) brightness(0.9);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(0.9);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  /* Sharpen top edge to reinforce the glass feel */
+  border-top-color: rgba(255, 255, 255, 0.16);
+}
+
+/* ── Toast notification — already blurred but bump it up ── */
+#toast {
+  background: rgba(22, 22, 22, 0.78);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ⑤ LIBRARY — SLEEK PROGRESS BAR UI
+   Replaces the 2px hairline bar with a visible 4px pill bar with a
+   gradient fill and champagne glow. The "X% complete" meta text is
+   retained but styled as a de-emphasised caption; hide it via JS
+   if you prefer the pure-bar look (see maktaba-refinements.js).
+   ══════════════════════════════════════════════════════════════════ */
+
+.book-progress-bar {
+  margin-top: 9px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.book-progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(200, 169, 110, 0.50) 0%,
+    #c8a96e 100%
+  );
+  box-shadow: 0 0 8px rgba(200, 169, 110, 0.35);
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Small glowing dot at the leading edge of progress fill */
+.book-progress-fill::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c8a96e;
+  box-shadow: 0 0 6px 2px rgba(200, 169, 110, 0.6);
+  /* Only show dot when bar has meaningful progress */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* Show the leading dot only when fill > ~5% */
+/* JS equivalent: see maktaba-refinements.js progressDotVisibility() */
+.book-progress-fill[style*="width: 0"] ::after,
+.book-progress-fill[style*="width:0"] ::after { opacity: 0; }
+
+/* De-emphasise "X% complete" text — progress bar is the visual anchor now */
+.book-meta {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  letter-spacing: 0.2px;
+}
+
+/* If you have a separate .book-progress-pct class on the text node, add: */
+.book-progress-pct {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ⑥ TYPOGRAPHY HIERARCHY
+   Enforces system-ui on all structural UI elements.
+   Serif / Arabic fonts are reserved exclusively for reading content
+   (#rsvp-word, #manual-text, #sentence-preview).
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Structural UI layer: explicit sans-serif ── */
+.page-title,
+.page-subtitle,
+.settings-section-title,
+.settings-row-label,
+.settings-row-sub,
+.slider-label,
+.slider-value,
+.section-label,
+.panel-title,
+.panel-label,
+.panel-slider-val,
+.mode-btn,
+.book-title,
+.book-meta,
+.book-action-btn,
+.ctrl-btn,
+.wpm-q-btn,
+.timer-digits,
+.timer-label-below,
+.preset-btn,
+.nav-btn,
+.primary-btn,
+.para-indicator,
+.progress-pct,
+.rs-panel-title,
+#reader-wpm-display,
+#reader-book-title {
+  font-family: var(--font-ui);
+  /* Prevent accidental bleed-through of --user-font */
+}
+
+/* ── Reading content layer: user-selected font (serif / Arabic) ── */
+/* These are already set via var(--user-font) in the original CSS.
+   Listed here as documentation of the intentional separation. */
+/*
+  #rsvp-word          → var(--user-font)
+  #manual-text        → var(--user-font)
+  #sentence-preview   → var(--user-font)
+*/
+
+/* ── Font option previews in the settings font-picker ── */
+/* .font-preview uses inline style="font-family:..." from HTML — intentional */
+.font-name {
+  font-family: var(--font-ui);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ⑦ RSVP FOCUS MARKER — CSS VARIABLE + COLOR PRESETS
+   --focus-marker-color drives both the vertical line and pivot dot.
+   Override this variable anywhere (inline style, JS, or settings)
+   to instantly change the marker appearance.
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Default: champagne gold — matches app accent.
+     To swap: set this to one of the presets below, or any CSS color.
+
+     PRESET A – Cool Blue  : #5BCEFA   (high contrast, modern)
+     PRESET B – Warm Blue  : #4A90D9   (softer, less intrusive)
+     PRESET C – Subtle Red : #E74C3C   (strong contrast for fast reading)
+     PRESET D – Mint       : #2ECC71   (readable on gold/warm text)
+     PRESET E – Muted Gold : rgba(200,169,110,0.5)  (current, softer)
+  */
+  --focus-marker-color: var(--accent);
+
+  /* Opacity is controllable separately */
+  --focus-marker-opacity: 0.65;
+}
+
+/* Override marker elements to use the variable */
+#rsvp-focus-line {
+  background: var(--focus-marker-color);
+  opacity: var(--focus-marker-opacity);
+}
+
+#rsvp-pivot-marker {
+  background: var(--focus-marker-color);
+  opacity: calc(var(--focus-marker-opacity) * 0.65);
+}
+
+/* ── Optional: add a subtle glow that matches the marker color ── */
+#rsvp-focus-line {
+  box-shadow: 0 0 6px var(--focus-marker-color);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ⑧ RSVP PLAYBACK CONTROLS — SIMPLIFIED LAYOUT
+   The -50 / +50 WPM jump buttons are removed from the HTML (see
+   maktaba-html-patches.md). This CSS block handles the new
+   centered [-10] [▶/⏸] [+10] layout.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* The ctrl-row now has only 3 elements: skip-back, play-pause, skip-fwd */
+.rsvp-controls .ctrl-row {
+  justify-content: center;
+  gap: 20px;    /* slightly more generous spacing without the extra buttons */
+}
+
+/* Skip buttons get a subtle label showing the word count */
+.ctrl-btn.skip-btn {
+  flex-direction: column;
+  gap: 3px;
+  height: 50px;
+  width: 50px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+}
+
+.ctrl-btn.skip-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ctrl-skip-label {
+  font-size: 10px;
+  font-family: var(--font-ui);
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Make the play-pause button slightly larger now that it's the focal point */
+.ctrl-btn.play-pause {
+  width: 62px;
+  height: 62px;
+}
+
+.ctrl-btn.play-pause svg {
+  width: 26px;
+  height: 26px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   BONUS: Progress scrubber click area — make it easier to tap
+   ══════════════════════════════════════════════════════════════════ */
+
+.progress-bar-wrap {
+  height: 16px; /* larger tap target */
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.progress-bar-wrap::before {
+  /* The visible 3px track line */
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 3px;
+  background: var(--text-muted);
+  border-radius: 3px;
+}
+
+#progress-fill {
+  position: absolute;
+  left: 0; top: 50%; height: 3px;
+  transform: translateY(-50%);
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.1s linear;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   PATCH v1.1 — PROGRESS BAR & MANUAL PACING INDICATOR
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Thicker library progress bar (was 4px → 6px) ── */
+.book-progress-bar {
+  height: 6px;
+  margin-top: 10px;
+}
+
+/* ── Remaining-time caption: accent-colored, right-aligned ── */
+.book-meta {
+  font-size: 11px;
+}
+
+/* ── Manual mode: topbar chunk counter looks like a nav pill,
+      not a WPM speed badge ── */
+#reader-wpm-display {
+  transition: background 0.2s, color 0.2s;
+}
+
+/* When the text contains "/" it's a chunk indicator — JS adds this class */
+#reader-wpm-display.chunk-mode {
+  background: var(--bg-glass);
+  border-color: var(--border-glass);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ── Session summary overlay entrance animation ── */
+@keyframes summary-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+#session-summary-overlay > div {
+  animation: summary-in 0.35s cubic-bezier(0.4,0,0.2,1) both;
+}
